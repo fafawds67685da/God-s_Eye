@@ -6,8 +6,10 @@ import os
 import time
 from datetime import datetime
 
-# Load YOLOv5 pre-trained model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+# Load YOLOv8 pre-trained model
+from ultralytics import YOLO
+
+model = YOLO('yolov8s.pt')
 
 # Use Laptop Camera (usually device 0)
 cap = cv2.VideoCapture(0)
@@ -34,14 +36,21 @@ while True:
     if current_time - last_save_time >= save_interval:
         # Run object detection
         results = model(frame)
-        detected_objects = results.pandas().xyxy[0]['name'].tolist()
+
+        # Extract detections
+        boxes = results[0].boxes.xyxy.cpu().numpy()
+        labels = results[0].boxes.cls.cpu().numpy()
+        confidences = results[0].boxes.conf.cpu().numpy()
+
+        # Get detected object names
+        detected_objects = [model.names[int(cls)] for cls in labels]
 
         # Draw bounding boxes
-        for *box, conf, cls in results.xyxy[0]:
-            label = model.names[int(cls)]
+        for box, label, conf in zip(boxes, labels, confidences):
             x1, y1, x2, y2 = map(int, box)
+            class_name = model.names[int(label)]
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, label, (x1, y1 - 10),
+            cv2.putText(frame, f"{class_name} {conf:.2f}", (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
         # Save the frame with timestamp
@@ -55,13 +64,14 @@ while True:
 
         # Send only the first detected object (class) to the agent
         try:
-            detected_class = detected_objects[-1]  # Use only the first detected object
-            response = requests.post(
-                'http://127.0.0.1:5001/detect',
-                json={'objects': [detected_class]}  # Send only the first class as a list
-            )
-           # agent_response = response.json().get('response', 'No response from agent.')
-            #print("Agent response:", agent_response)
+            if detected_objects:
+                detected_class = detected_objects[-1]  # last detected object
+                response = requests.post(
+                    'http://127.0.0.1:5001/detect',
+                    json={'objects': [detected_class]}  
+                )
+                # agent_response = response.json().get('response', 'No response from agent.')
+                # print("Agent response:", agent_response)
         except Exception as e:
             print(f"Error sending data to agent: {e}")
 
