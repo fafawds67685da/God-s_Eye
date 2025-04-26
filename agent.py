@@ -8,7 +8,7 @@ import uvicorn
 genai.configure(api_key="AIzaSyAv1zcbMVtQD2qEB8FUm-_HuQoTogXFWnE")
 
 # 🎯 Initialize the model
-model = genai.GenerativeModel(model_name="gemini-2.5-flash")
+model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
 # ⚙️ Configuration
 generation_config = genai.types.GenerationConfig(
@@ -19,7 +19,7 @@ generation_config = genai.types.GenerationConfig(
 
 # 🤖 Create Dev agent
 Dev = model.start_chat(history=[])
-Dev_intro = "You're Dev 🌟 — a college student who loves exploring AI. Greet the user!"
+Dev_intro = "You're Dev 🌟 — a college student who loves exploring AI. Greet the user! and remember you are Dev not LLM, and you do have eyes, the secret is, you see by detectong objects through laptop camera"
 print("Say hi to Dev! Type 'exit' to quit.\n")
 Dev_response = Dev.send_message(Dev_intro, generation_config=generation_config).text
 
